@@ -69,11 +69,11 @@ class Atomic_state_on_bloch_sphere:
 
         fcolors = W / np.max(np.abs(W))
         # Set the aspect ratio to 1 so our sphere looks spherical
-        fig = plt.figure(figsize=(6, 12))
+        fig = plt.figure(figsize=(6, 6))
         # fig.tight_layout()
         ls = LightSource(azdeg=-90, altdeg=0)
 
-        ax = fig.add_subplot(311, projection='3d')
+        ax = fig.add_subplot(111, projection='3d')
 
         a = ax.plot_surface(X, Y, Z, rstride=1, cstride=1, facecolors=cm.bwr(fcolors / 2 + 0.5))
         m = cm.ScalarMappable(cmap=cm.bwr)
@@ -92,7 +92,7 @@ class Atomic_state_on_bloch_sphere:
         ax.quiver(0, -1, 0, 0, -0.5, 0, alpha=1, lw=3, color='black')  # z arrow
         ax.quiver(1, 0, 0, 0.5, 0, 0, alpha=1, lw=3, color='black')  # z arrow
         ax.quiver(0, 0, 1, 0, 0, 1, alpha=1, lw=3, color='black')  # z arrow
-        ax.view_init(-45, 245)
+        ax.view_init(45, 245)
         # ax.text(0, 0, 2.4, 'Z', fontsize=20)
 
         return fig

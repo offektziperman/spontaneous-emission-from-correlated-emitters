@@ -263,9 +263,11 @@ def main():
     M = 7 # Size of light basis
 
     # atomic_rho = qutip.Qobj(nir_rho)  #uncomment this line
-
-    # atomic_rho = qutip.ket2dm(atomic_cat(N, np.pi/2*1j))  # initial atomic state example cat state
+    atomic_wigner = Atomic_state_on_bloch_sphere(N)
+    atomic_rho = qutip.ket2dm(atomic_two_cat(N, np.pi/2*1j))  # initial atomic state example cat state
     atomic_rho = qutip.ket2dm(qutip.basis(N, N - 1))  # initial atomic state example fock state
+    fig = atomic_wigner.Wigner_BlochSphere(500, np.size(atomic_rho, 1) - 1, [], atomic_rho, 'rho')
+    plt.show()
     light_rho = qutip.ket2dm(qutip.basis(M, 0))  # initial light state
     Sx = qutip.jmat((N - 1) / 2, 'x')
 
@@ -276,8 +278,8 @@ def main():
     times = np.linspace(0, 10, 100)  # time vector - in units of g^-1
     dt = times[1] - times[0]
 
-    xsi = np.logspace(-1,1, 10)  # reabsorbtion efficiency
-    gammas = np.linspace(0, 0.15, 10)
+    xsi = np.linspace(7,7, 10)  # reabsorbtion efficiency
+    gammas = np.linspace(0.13, 0.15, 10)
     kappa = (2 * (M - 1) / xsi) ** 0.5  # kappa = 2N/xsi
 
     RES = 100
