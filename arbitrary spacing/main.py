@@ -316,6 +316,15 @@ def create_fig5b(times, distances, psi_inits, num_emitters, atom_dim, light_dim)
         np.save('purity' + str(k), purities)
         np.save('distance' + str(k), distances)
 
+def straighten_phase(rho,final_phase):
+    '''
+
+    :param rho:
+    :param final_phase:
+    :return:
+    '''
+    phi = qutip.phase(N)
+
 
 def coherent_state(num_emitters, theta):
     phase_factor = np.array(np.linspace(1, num_emitters, num_emitters) *0)
