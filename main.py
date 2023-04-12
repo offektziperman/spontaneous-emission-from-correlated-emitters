@@ -350,7 +350,6 @@ def get_density_matrix_in_virtual_cavity(times, psi_init, param, atom_dim, light
                                           state_outside,
                                           modes):
     phase_factor = np.array(np.linspace(1, num_emitters, num_emitters) * d)
-
     rho = simulate_emitters(times, psi_init, 1, atom_dim, light_dim, phase_factor, num_emitters, plot=True,
                             state_outside=True, modes=modes)
     return rho
@@ -452,10 +451,10 @@ def plot_maps_distance():
 def main():
     times = np.linspace(0, Tf, RES)
     atom_dim = 2
-    num_emitters = 7
+    num_emitters = 6
     light_dim = num_emitters + 1
-    d = 1/2 # in units of wavelength
-
+    d = 1/2 # in units of wavelength, adding a wavelength doesnt matter
+    # d = 0 this is lambda spacing
     psi_init = coherent_state(num_emitters, np.pi / 2)
     # psi_init = dicke_state(num_emitters, 3)
 
