@@ -223,7 +223,6 @@ def make_plots(times, modes, rho_eta_mode_a, result, occupations):
     fig.set_figheight(7)
     plot_intensity(times, result, ax1)
     plot_modes(times, modes, ax2)
-    print(rho_eta_mode_a)
     qutip.plot_wigner(qutip.Qobj(rho_eta_mode_a), cmap=cmap, colorbar=True, fig=fig, ax=ax4)
     ax4.set_title('')
 
