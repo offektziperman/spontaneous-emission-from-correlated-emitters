@@ -7,10 +7,10 @@ from scipy.fft import fft, fftfreq
 import numpy as np
 
 OMEGA_0 = 0  # atomic transition frequency
-RES = 200   # Number of sample points
+RES = 200  # Number of sample points
 GAMMA = 1
 GAMMA_s = 0.
-Tf = 4  # GAMMA ** -1 * 30
+Tf = 1.  # GAMMA ** -1 * 30
 cmap = matplotlib.cm.bwr
 
 
@@ -227,8 +227,8 @@ def make_plots(times, modes, rho_eta_mode_a, result, occupations):
     ax4.set_title('')
 
     ax3.bar(np.linspace(1, len(occupations), len(occupations)), np.real(occupations))
-    ax3.set_xlabel('Mode',fontsize=12)
-    ax3.set_ylabel('Occupation',fontsize=12)
+    ax3.set_xlabel('Mode', fontsize=12)
+    ax3.set_ylabel('Occupation', fontsize=12)
     plt.show()
 
 
@@ -294,7 +294,7 @@ def simulate_emitters(times, psi_init, num_modes, atom_dim, light_dim,
                                               mode_1, num_emitters)
 
     if plot:
-        make_plots(times, [mode_1,mode_2], rho_eta_mode_a, result,
+        make_plots(times, [mode_1, mode_2], rho_eta_mode_a, result,
                    occupations)
     return rho_eta_mode_a
 
@@ -312,22 +312,37 @@ def create_fig5b(times, distances, psi_inits, num_emitters, atom_dim, light_dim)
                                                                        phase_factor, num_emitters,
                                                                        plot=False,
                                                                        state_outside=False, modes=False)
-        np.save('emitted_energy' + str(k), emitted_energies)
-        np.save('purity' + str(k), purities)
-        np.save('distance' + str(k), distances)
+        np.save('data/emitted_energy' + str(k), emitted_energies)
+        np.save('data/purity' + str(k), purities)
+        np.save('data/distance' + str(k), distances)
 
-def straighten_phase(rho,final_phase):
+
+def straighten_phase(rho, light_dim):
     '''
 
     :param rho:
     :param final_phase:
     :return:
     '''
-    phi = qutip.phase(N)
+
+    a = qutip.destroy(light_dim)
+    x = a + a.dag()
+    x2_expect_max = np.trace(x * x * rho)
+    a = qutip.destroy(light_dim)
+    n = a.dag() * a
+    phi_0_max = 0
+    rho_max = rho
+    for phi_0 in np.linspace(0, 2 * np.pi, 100):
+        rho_rot = (1j * phi_0 * n).expm() * rho * (-1j * phi_0 * n).expm()
+        x2_expect = np.trace(x * x * rho_rot)
+        if x2_expect > x2_expect_max:
+            x2_expect_max = x2_expect
+            rho_max = rho_rot
+    return rho_max
 
 
 def coherent_state(num_emitters, theta):
-    phase_factor = np.array(np.linspace(1, num_emitters, num_emitters) *0)
+    phase_factor = np.array(np.linspace(1, num_emitters, num_emitters) * 0)
     psi_init = qutip.tensor([basis(2, 1) for i in range(num_emitters)])
     S_m, S_p, S_z = create_spin_operators(phase_factor, num_emitters)
     to_exp = 1j * (S_p + S_m) / 2 * theta
@@ -335,7 +350,7 @@ def coherent_state(num_emitters, theta):
 
 
 def cat_state(num_emitters, theta):
-    phase_factor = np.array(np.linspace(1, num_emitters, num_emitters) *0)
+    phase_factor = np.array(np.linspace(1, num_emitters, num_emitters) * 0)
     psi_init = qutip.tensor([basis(2, 1) for i in range(num_emitters)])
     S_m, S_p, S_z = create_spin_operators(phase_factor, num_emitters)
     to_exp = 1j * (S_p + S_m) / 2 * theta
@@ -345,22 +360,21 @@ def cat_state(num_emitters, theta):
 
 
 def dicke_state(num_emitters, k):
-    phase_factor = np.array(np.linspace(1, num_emitters, num_emitters) *0)
+    phase_factor = np.array(np.linspace(1, num_emitters, num_emitters) * 0)
     psi_init = qutip.tensor([basis(2, 1) for i in range(num_emitters)])
     S_m, S_p, S_z = create_spin_operators(phase_factor, num_emitters)
     for i in range(k):
         psi_init = S_p * psi_init
-        print(i)
     return psi_init / psi_init.norm()
 
 
 def get_density_matrix_in_virtual_cavity(times, psi_init, param, atom_dim, light_dim, d, num_emitters, plot,
-                                          state_outside,
-                                          modes):
+                                         state_outside,
+                                         modes):
     phase_factor = np.array(np.linspace(1, num_emitters, num_emitters) * d)
-    rho = simulate_emitters(times, psi_init, 1, atom_dim, light_dim, phase_factor, num_emitters, plot=True,
-                            state_outside=True, modes=modes)
-    return rho
+    rho = simulate_emitters(times, psi_init, 1, atom_dim, light_dim, phase_factor, num_emitters, plot=plot,
+                            state_outside=state_outside, modes=modes)
+    return straighten_phase(rho, light_dim)
 
 
 def mod(t, tau):
@@ -400,10 +414,11 @@ def plot_maps_distance():
     ax4.pcolormesh(times, distance / (2 * np.pi), energy_all_excited.T, cmap='inferno', shading='gouraud')
     m = ax4.collections[0]
     m.set_clim(-3, 3)
-    ax1.set_xlim([0, 2])
-    ax2.set_xlim([0, 2])
-    ax3.set_xlim([0, 2])
-    ax4.set_xlim([0, 2])
+
+    ax1.set_xlim([0, 1])
+    ax2.set_xlim([0, 1])
+    ax3.set_xlim([0, 1])
+    ax4.set_xlim([0, 1])
 
     ax1.set_xticks([])
     ax1.set_yticks([])
@@ -413,7 +428,10 @@ def plot_maps_distance():
     ax3.set_yticks([])
     ax4.set_xticks([])
     ax4.set_yticks([])
-    plt.tight_layout()
+    f.set_figwidth(15)
+    f.set_figheight(2.4)
+    plt.subplots_adjust(wspace=0.05, hspace=0.1)
+    plt.savefig('fig5b.jpg')
 
     f2, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4)
     purity_coherent = np.load('Data/purity0.npy')
@@ -439,10 +457,11 @@ def plot_maps_distance():
     ax4.pcolormesh(times, distance / (2 * np.pi), purity_all_excited.T, cmap='inferno', shading='gouraud')
     m = ax4.collections[0]
     m.set_clim(0, 1)
-    ax1.set_xlim([0, 2])
-    ax2.set_xlim([0, 2])
-    ax3.set_xlim([0, 2])
-    ax4.set_xlim([0, 2])
+    print(times[-1])
+    ax1.set_xlim([0, 1])
+    ax2.set_xlim([0, 1])
+    ax3.set_xlim([0, 1])
+    ax4.set_xlim([0, 1])
 
     ax1.set_xticks([])
     ax1.set_yticks([])
@@ -452,8 +471,50 @@ def plot_maps_distance():
     ax3.set_yticks([])
     ax4.set_xticks([])
     ax4.set_yticks([])
-    plt.tight_layout()
-    plt.show()
+    f2.set_figwidth(15)
+    f2.set_figheight(2.4)
+    plt.subplots_adjust(wspace=0.05, hspace=0.1)
+    plt.savefig('fig5c.jpg')
+
+
+
+def figure_5a(psi_inits, atom_dim, light_dim, num_emitters, times, distances):
+    rhos = []
+    for psi_init in psi_inits:
+        init_condition_const_changing_distance = []
+        for d in distances:
+            rho_eta_final = get_density_matrix_in_virtual_cavity(times, psi_init, 1, atom_dim, light_dim, 2 * np.pi * d,
+                                                                 num_emitters,
+                                                                 plot=False,
+                                                                 state_outside=True, modes=False)
+            print(d)
+            init_condition_const_changing_distance.append(rho_eta_final)
+        rhos.append(init_condition_const_changing_distance)
+        np.save('Data/density_mats/rhos', rhos)
+        np.save('Data/density_mats/distances', distances)
+
+
+def plot_figure_5a():
+    rhos = np.load('Data/density_mats/rhos.npy')
+    f, axes = plt.subplots(4, 7)
+    for i, init_condition in enumerate(rhos):
+        for j, rho in enumerate(init_condition):
+            if i ==0 and j ==2:
+                n = qutip.destroy(7).dag()*qutip.destroy(7)
+                rho = qutip.Qobj(rho)
+                rho = (1j*np.pi*n).expm()*rho*(-1j*np.pi*n).expm()
+            wig = qutip.plot_wigner(qutip.Qobj(rho),alpha_max=4, fig=f, ax=axes[i, j],cmap='bwr')
+            axes[i,j].set_xticks([])
+            axes[i,j].set_yticks([])
+            axes[i,j].set_xlabel('')
+            axes[i,j].set_ylabel('')
+            axes[i,j].set_title('')
+            axes[i,j].set_aspect('equal')
+    plt.subplots_adjust(wspace=0.1, hspace=0.1)
+    f.set_figwidth(7)
+    f.set_figheight(4)
+
+    plt.savefig('fig5a.svg')
 
 
 def main():
@@ -461,25 +522,26 @@ def main():
     atom_dim = 2
     num_emitters = 6
     light_dim = num_emitters + 1
-    d = 1/2 # in units of wavelength, adding a wavelength doesnt matter
+    d = 1 / 2  # in units of wavelength, adding a wavelength doesnt matter
     # d = 0 this is lambda spacing
     psi_init = coherent_state(num_emitters, np.pi / 2)
     # psi_init = dicke_state(num_emitters, 3)
+    # rho_eta_final = get_density_matrix_in_virtual_cavity(times, psi_init, 1, atom_dim, light_dim, 2 * np.pi * d,
+    #                                                      num_emitters,
+    #                                                      plot=True,
+    #                                                      state_outside=True, modes=False)
 
-    rho_eta_final = get_density_matrix_in_virtual_cavity(times, psi_init, 1, atom_dim, light_dim, 2 * np.pi * d, num_emitters,
-                                          plot=True,
-                                          state_outside=True, modes=False)
+    distances = np.linspace(0, 2 * np.pi, 100)
 
-    # distances = np.linspace(0, 2 * np.pi, 100)
-
-    # psi_inits = coherent_state(num_emitters, np.pi / 2, phase_factor), cat_state(num_emitters, np.pi / 2, phase_factor), \
-    #             dicke_state(num_emitters, (num_emitters - 1) // 2, phase_factor), dicke_state(num_emitters,
-    #                                                                                           num_emitters,
-    #                                                                                           phase_factor),
-
+    psi_inits = coherent_state(num_emitters, np.pi / 2), cat_state(num_emitters, np.pi / 2), \
+                dicke_state(num_emitters, (num_emitters - 1) // 2), dicke_state(num_emitters, num_emitters)
+    # distances = [0, 1 / 24, 1 / 12, 1 / 6, 1 / 4, 1 / 3, 1 / 2]
+    # figure_5a(psi_inits, atom_dim, light_dim, num_emitters, times, distances)
+    # plot_figure_5a()
     # create_fig5b(times, distances, psi_inits, num_emitters, atom_dim, light_dim)
-
+    plot_maps_distance()
 
 if __name__ == '__main__':
     # plot_maps_distance()
+
     main()
